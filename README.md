@@ -4,10 +4,10 @@ Suppliers run this Shopify app on their own infrastructure and embed it in their
 
 The connector can:
 
-- create and read orders
-- read fulfillment status and tracking
+- create and read orders it created
+- read fulfillment status and tracking for those orders
 
-Read responses leave out customer name, email, phone, and street address. Creating an order still sends a shipping address through to Shopify so the supplier can ship it. That address is not written to the activity log and is not returned by later reads.
+It does not return orders created by another app. Responses, including order and fulfillment payloads and webhooks, leave out customer name, email, phone, and street address. Creating an order still sends a shipping address through to Shopify so the supplier can ship it. That address is not written to the activity log and is not returned.
 
 The app requests `read_assigned_fulfillment_orders`, `write_draft_orders`, `read_draft_orders`, `read_fulfillments`, `read_inventory`, `read_locations`, `read_merchant_managed_fulfillment_orders`, `write_order_edits`, `read_orders`, `write_orders`, `read_products`, `read_shipping`, and `read_third_party_fulfillment_orders`. `write_orders` includes reading orders, limited to the last 60 days. It does not request customer records, all historical orders, or permission to edit products.
 
@@ -19,11 +19,11 @@ Authenticate with `Authorization: Bearer <token>`. Create the token in the embed
 | --- | --- | --- |
 | `GET` | `/api/v1/health` | Liveness. No authentication and no shop data. |
 | `GET` | `/api/v1/shop` | Shop domain and the scopes Shopify has granted. |
-| `GET` | `/api/v1/orders?limit=25&cursor=&name=&externalId=&fulfillmentStatus=` | Orders, without customer fields. |
+| `GET` | `/api/v1/orders?limit=25&cursor=&name=&externalId=&fulfillmentStatus=` | Orders created by this connector, without customer fields. |
 | `POST` | `/api/v1/orders` | Create an order. |
 | `GET` | `/api/v1/orders/:id` | One order. |
 | `GET` | `/api/v1/orders/:id/tracking` | Tracking numbers for an order. |
-| `POST` | `/api/v1/graphql` | Proxy an order or fulfillment query, or create an order. Other mutations are rejected. |
+| `POST` | `/api/v1/graphql` | Proxy an order or fulfillment query for an order this connector created, or create an order. Customer fields and other mutations are rejected. |
 | `PUT` | `/api/v1/destination` | Tell the connector where to send order and fulfillment webhooks. |
 | `POST` | `/webhooks/shopify` | Shopify calls this. The connector signs the payload and forwards it to ShipGeek. |
 

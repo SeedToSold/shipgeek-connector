@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { assertOrderFulfillmentQuery, assertShipGeekOrderMetafield, isOrderFulfillmentQuery } from "./graphql-proxy";
+import { assertNoCustomerData, assertOrderFulfillmentQuery, assertShipGeekOrderMetafield, isOrderFulfillmentQuery } from "./graphql-proxy";
 
 test("order and fulfillment queries can be proxied", () => {
   assert.equal(isOrderFulfillmentQuery("#graphql\nquery { order(id: $id) { id fulfillments { id } } }"), true);
@@ -22,4 +22,6 @@ test("order creation is proxied and other mutations stay off the proxy", () => {
   assert.doesNotThrow(() => assertOrderFulfillmentQuery("mutation metafieldDefinitionCreate { metafieldDefinitionCreate { createdDefinition { id } } }"));
   assert.doesNotThrow(() => assertShipGeekOrderMetafield({ definition: { namespace: "shipgeek", ownerType: "ORDER" } }));
   assert.throws(() => assertShipGeekOrderMetafield({ definition: { namespace: "custom", ownerType: "PRODUCT" } }), /ShipGeek order metafields/);
+  assert.throws(() => assertNoCustomerData("query { order(id: $id) { id email shippingAddress { address1 } } }"), /customer data/);
+  assert.doesNotThrow(() => assertNoCustomerData("query { order(id: $id) { id name shippingLine { title } } }"));
 });

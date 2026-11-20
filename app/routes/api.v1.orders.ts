@@ -5,7 +5,7 @@ import { result, shipgeekRoute } from "../shipgeek/route.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   return shipgeekRoute(request, "orders.list", async (context) => {
-    const body = await listOrders(context.admin, new URL(request.url));
+    const body = await listOrders(context.admin, context.shop, new URL(request.url));
     return result(body);
   });
 };

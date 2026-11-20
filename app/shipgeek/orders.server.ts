@@ -12,6 +12,7 @@ import {
   toPublicTracking,
   type CreateOrderInput,
 } from "./orders";
+import { currentAppGid } from "./order-access.server";
 import { externalIdTag } from "./tokens";
 
 const ORDER_FIELDS = `#graphql
@@ -66,12 +67,15 @@ const ORDER_FIELDS = `#graphql
         url
       }
     }
+    app {
+      id
+    }
   }
 `;
 
 type OrderNode = Parameters<typeof toPublicOrder>[0];
 
-export async function listOrders(admin: ShipGeekContext["admin"], url: URL) {
+export async function listOrders(admin: ShipGeekContext["admin"], shop: string, url: URL) {
   const { limit, cursor } = parseListQuery(url);
   const query = orderSearchQuery(url);
   const data = await adminGraphql<{
@@ -95,8 +99,9 @@ export async function listOrders(admin: ShipGeekContext["admin"], url: URL) {
     { first: limit, after: cursor, query },
   );
 
+  const appId = await currentAppGid(admin, shop);
   return {
-    orders: data.orders.nodes.map((node) => {
+    orders: data.orders.nodes.filter((node) => createdByConnector(node, appId)).map((node) => {
       const { fulfillments, ...order } = toPublicOrder(node);
       void fulfillments;
       return order;
@@ -108,19 +113,19 @@ export async function listOrders(admin: ShipGeekContext["admin"], url: URL) {
   };
 }
 
-export async function readOrder(admin: ShipGeekContext["admin"], id: string) {
-  const node = await fetchOrder(admin, orderGid(id));
+export async function readOrder(admin: ShipGeekContext["admin"], shop: string, id: string) {
+  const node = await fetchOrder(admin, shop, orderGid(id));
   return node ? toPublicOrder(node) : null;
 }
 
-export async function readTracking(admin: ShipGeekContext["admin"], id: string) {
-  const node = await fetchOrder(admin, orderGid(id));
+export async function readTracking(admin: ShipGeekContext["admin"], shop: string, id: string) {
+  const node = await fetchOrder(admin, shop, orderGid(id));
   return node ? toPublicTracking(node) : null;
 }
 
 export async function createOrder(admin: ShipGeekContext["admin"], shop: string, body: unknown) {
   const input = parseCreateOrder(body);
-  const existing = await findOrderByExternalId(admin, input.externalId);
+  const existing = await findOrderByExternalId(admin, shop, input.externalId);
   if (existing) return { created: false, order: toPublicOrder(existing) };
 
   try {
@@ -144,7 +149,7 @@ export async function createOrder(admin: ShipGeekContext["admin"], shop: string,
 }
 
 async function resumeOrder(admin: ShipGeekContext["admin"], shop: string, externalId: string) {
-  const found = await findOrderByExternalId(admin, externalId);
+  const found = await findOrderByExternalId(admin, shop, externalId);
   if (found) {
     await prisma.orderRef.update({
       where: { shop_externalId: { shop, externalId } },
@@ -189,7 +194,7 @@ async function createShopifyOrder(admin: ShipGeekContext["admin"], input: Create
   return data.orderCreate.order;
 }
 
-async function findOrderByExternalId(admin: ShipGeekContext["admin"], externalId: string) {
+async function findOrderByExternalId(admin: ShipGeekContext["admin"], shop: string, externalId: string) {
   const data = await adminGraphql<{ orders: { nodes: OrderNode[] } }>(
     admin,
     `#graphql
@@ -204,10 +209,16 @@ async function findOrderByExternalId(admin: ShipGeekContext["admin"], externalId
     `,
     { query: `tag:${externalIdTag(externalId)}` },
   );
-  return data.orders.nodes[0] || null;
+  const appId = await currentAppGid(admin, shop);
+  const node = data.orders.nodes[0] || null;
+  return createdByConnector(node, appId) ? node : null;
 }
 
-async function fetchOrder(admin: ShipGeekContext["admin"], id: string) {
+function createdByConnector(node: (OrderNode & { app?: { id?: string | null } | null }) | null | undefined, appId: string) {
+  return Boolean(appId) && node?.app?.id === appId;
+}
+
+async function fetchOrder(admin: ShipGeekContext["admin"], shop: string, id: string) {
   const data = await adminGraphql<{ order: OrderNode | null }>(
     admin,
     `#graphql
@@ -220,7 +231,8 @@ async function fetchOrder(admin: ShipGeekContext["admin"], id: string) {
     `,
     { id },
   );
-  return data.order;
+  const appId = await currentAppGid(admin, shop);
+  return createdByConnector(data.order, appId) ? data.order : null;
 }
 
 function isUnique(error: unknown) {
