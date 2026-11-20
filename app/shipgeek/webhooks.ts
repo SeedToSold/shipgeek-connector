@@ -4,6 +4,7 @@ import { ConnectorError } from "./http";
 export const ORDER_WEBHOOKS = [
   { topic: "ORDERS_CREATE", metafieldNamespaces: ["shipgeek"] },
   { topic: "ORDERS_UPDATED", metafieldNamespaces: ["shipgeek"] },
+  { topic: "ORDERS_CANCELLED" },
   { topic: "FULFILLMENTS_CREATE" },
   { topic: "FULFILLMENTS_UPDATE" },
 ] as const;

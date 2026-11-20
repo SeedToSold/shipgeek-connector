@@ -6,7 +6,7 @@ import { destinationFromBody, ORDER_WEBHOOKS, signWebhook, webhookCallbackUrl } 
 test("order webhooks cover create and update for orders and fulfillments", () => {
   assert.deepEqual(
     ORDER_WEBHOOKS.map((webhook) => webhook.topic),
-    ["ORDERS_CREATE", "ORDERS_UPDATED", "FULFILLMENTS_CREATE", "FULFILLMENTS_UPDATE"],
+    ["ORDERS_CREATE", "ORDERS_UPDATED", "ORDERS_CANCELLED", "FULFILLMENTS_CREATE", "FULFILLMENTS_UPDATE"],
   );
   assert.equal(webhookCallbackUrl("https://connector.example.com"), "https://connector.example.com/webhooks/shopify");
 });

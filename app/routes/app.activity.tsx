@@ -11,6 +11,7 @@ const ACTION_LABELS: Record<string, string> = {
   "orders.create": "Create order",
   "orders.tracking": "Read tracking",
   "orders.query": "Proxy order query",
+  "metafields.ensure": "Ensure order metafield",
   "webhooks.register": "Register webhooks",
   "webhooks.clear": "Remove webhooks",
 };

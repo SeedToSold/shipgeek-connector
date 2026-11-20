@@ -23,7 +23,7 @@ Authenticate with `Authorization: Bearer <token>`. Create the token in the embed
 | `POST` | `/api/v1/orders` | Create an order. |
 | `GET` | `/api/v1/orders/:id` | One order. |
 | `GET` | `/api/v1/orders/:id/tracking` | Tracking numbers for an order. |
-| `POST` | `/api/v1/graphql` | Proxy one Shopify order or fulfillment query. Mutations are rejected. |
+| `POST` | `/api/v1/graphql` | Proxy an order or fulfillment query, or create an order. Other mutations are rejected. |
 | `PUT` | `/api/v1/destination` | Tell the connector where to send order and fulfillment webhooks. |
 | `POST` | `/webhooks/shopify` | Shopify calls this. The connector signs the payload and forwards it to ShipGeek. |
 
