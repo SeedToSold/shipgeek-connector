@@ -56,6 +56,14 @@ model OrderRef {
   @@index([shop])
 }
 
+// Where this shop's order and fulfillment webhooks are forwarded.
+model WebhookDestination {
+  shop      String   @id
+  url       String
+  secret    String
+  updatedAt DateTime @updatedAt
+}
+
 model AuditEvent {
   id         String   @id @default(cuid())
   shop       String

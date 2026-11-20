@@ -32,9 +32,8 @@ export default function Index() {
     <s-page heading="ShipGeek Connector">
       <s-section heading="Your store stays in your hands">
         <s-paragraph>
-          This app runs on your infrastructure and is embedded in your Shopify admin. ShipGeek does not install its
-          own app on this store. It calls the connector with a token you create, and you can revoke that token at any
-          time.
+          This app runs on your infrastructure and is embedded in your Shopify admin. It asks Shopify for the same
+          permissions as a ShipGeek supplier custom app. You can revoke the connector token at any time.
         </s-paragraph>
         {missing.length ? (
           <s-banner tone="warning" heading="Reopen the app to grant the remaining permissions">
@@ -52,9 +51,9 @@ export default function Index() {
       </s-section>
       <s-section heading="What ShipGeek can ask for">
         <s-unordered-list>
-          <s-list-item>Products, variants, SKUs, prices, and inventory levels</s-list-item>
-          <s-list-item>Create an order and read it back</s-list-item>
-          <s-list-item>Fulfillment status and tracking numbers</s-list-item>
+          <s-list-item>Orders, draft orders, and order edits</s-list-item>
+          <s-list-item>Fulfillments, including assigned, merchant-managed, and third-party</s-list-item>
+          <s-list-item>Products, inventory, locations, and shipping</s-list-item>
         </s-unordered-list>
       </s-section>
       <s-section heading="What stays here">
@@ -65,7 +64,7 @@ export default function Index() {
         </s-paragraph>
         <s-paragraph>
           Order reads cover the last 60 days, which is the standard Shopify order permission. This app does not request
-          access to all historical orders, customers, discounts, content, or shop settings.
+          customer records, all historical orders, or permission to edit products.
         </s-paragraph>
       </s-section>
       <s-section slot="aside" heading="This installation">

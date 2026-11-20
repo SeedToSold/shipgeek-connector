@@ -1,16 +1,15 @@
 # ShipGeek Connector
 
-Suppliers run this Shopify app on their own infrastructure and embed it in their Shopify admin. ShipGeek calls the connector. It does not install ShipGeek's custom app on the supplier store, and it never receives the supplier's Shopify Admin API token.
+Suppliers run this Shopify app on their own infrastructure and embed it in their Shopify admin. It asks Shopify for the same permissions as a ShipGeek supplier custom app. The connector never sends its Shopify Admin API token to ShipGeek.
 
 The connector can:
 
-- list and read products, variants, and inventory
 - create and read orders
-- read fulfillment tracking
+- read fulfillment status and tracking
 
 Read responses leave out customer name, email, phone, and street address. Creating an order still sends a shipping address through to Shopify so the supplier can ship it. That address is not written to the activity log and is not returned by later reads.
 
-`write_orders` includes reading orders, limited to the last 60 days. The app does not request `read_all_orders`, `read_customers`, `write_products`, content, discounts, or shop settings.
+The app requests `read_assigned_fulfillment_orders`, `write_draft_orders`, `read_draft_orders`, `read_fulfillments`, `read_inventory`, `read_locations`, `read_merchant_managed_fulfillment_orders`, `write_order_edits`, `read_orders`, `write_orders`, `read_products`, `read_shipping`, and `read_third_party_fulfillment_orders`. `write_orders` includes reading orders, limited to the last 60 days. It does not request customer records, all historical orders, or permission to edit products.
 
 ## API
 
@@ -19,13 +18,14 @@ Authenticate with `Authorization: Bearer <token>`. Create the token in the embed
 | Method | Path | Purpose |
 | --- | --- | --- |
 | `GET` | `/api/v1/health` | Liveness. No authentication and no shop data. |
-| `GET` | `/api/v1/shop` | Shop domain and the connector scope list. |
-| `GET` | `/api/v1/products?limit=25&cursor=&q=` | Products. `q` matches title or SKU. |
-| `GET` | `/api/v1/products/:id` | One product. `:id` is the numeric Shopify id. |
+| `GET` | `/api/v1/shop` | Shop domain and the scopes Shopify has granted. |
 | `GET` | `/api/v1/orders?limit=25&cursor=&name=&externalId=&fulfillmentStatus=` | Orders, without customer fields. |
 | `POST` | `/api/v1/orders` | Create an order. |
 | `GET` | `/api/v1/orders/:id` | One order. |
 | `GET` | `/api/v1/orders/:id/tracking` | Tracking numbers for an order. |
+| `POST` | `/api/v1/graphql` | Proxy one Shopify order or fulfillment query. Mutations are rejected. |
+| `PUT` | `/api/v1/destination` | Tell the connector where to send order and fulfillment webhooks. |
+| `POST` | `/webhooks/shopify` | Shopify calls this. The connector signs the payload and forwards it to ShipGeek. |
 
 `fulfillmentStatus` accepts `unfulfilled`, `partial`, `fulfilled`, `scheduled`, or `on_hold`.
 
@@ -54,7 +54,7 @@ Create order:
 
 `externalId` is idempotent. A repeat request returns the existing order. The connector does not email the customer unless `sendReceipt` is `true`. `financialStatus` defaults to `PAID`.
 
-The main ShipGeek app does not call this API yet. Point a supplier connection at `SHOPIFY_APP_URL` plus the token when that client is added.
+ShipGeek calls this API when a supplier saves a connector. Saving also registers order and fulfillment webhooks and forwards them to ShipGeek.
 
 ## Local development
 

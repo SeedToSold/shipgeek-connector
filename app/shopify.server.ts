@@ -6,6 +6,7 @@ import {
 } from "@shopify/shopify-app-react-router/server";
 import { PrismaSessionStorage } from "@shopify/shopify-app-session-storage-prisma";
 import prisma from "./db.server";
+import { ensureOrderWebhooks } from "./shipgeek/webhooks.server";
 
 const shopify = shopifyApp({
   apiKey: process.env.SHOPIFY_API_KEY,
@@ -22,6 +23,13 @@ const shopify = shopifyApp({
   ...(process.env.SHOP_CUSTOM_DOMAIN
     ? { customShopDomains: [process.env.SHOP_CUSTOM_DOMAIN] }
     : {}),
+  hooks: {
+    afterAuth: async ({ session, admin }) => {
+      const destination = await prisma.webhookDestination.findUnique({ where: { shop: session.shop } });
+      if (!destination || !process.env.SHOPIFY_APP_URL) return;
+      await ensureOrderWebhooks(admin, process.env.SHOPIFY_APP_URL);
+    },
+  },
 });
 
 export default shopify;

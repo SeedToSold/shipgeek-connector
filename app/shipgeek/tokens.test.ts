@@ -2,24 +2,25 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
-import { CONNECTOR_SCOPES, missingScopes, scopeGranted } from "./scopes";
+import { CONNECTOR_SCOPES, grantedScopeHandles, missingScopes, scopeGranted } from "./scopes";
 import { createAccessToken, externalIdTag, hashToken } from "./tokens";
 
 test("connector scopes match shopify.app.toml", () => {
   const toml = readFileSync(fileURLToPath(new URL("../../shopify.app.toml", import.meta.url)), "utf8");
   const scopes = toml.match(/scopes = "([^"]+)"/)?.[1]?.split(",") ?? [];
   assert.deepEqual([...scopes].sort(), [...CONNECTOR_SCOPES].sort());
-  assert.equal(scopes.includes("read_orders"), false);
   assert.equal(scopes.includes("read_customers"), false);
   assert.equal(scopes.includes("read_all_orders"), false);
   assert.equal(scopes.includes("write_products"), false);
 });
 
-test("write_orders already includes read_orders", () => {
+test("write permissions cover the matching read permissions", () => {
   assert.equal(scopeGranted(["write_orders"], "read_orders"), true);
+  assert.equal(scopeGranted(["write_draft_orders"], "read_draft_orders"), true);
+  assert.deepEqual(missingScopes([...CONNECTOR_SCOPES]), []);
   assert.deepEqual(
-    missingScopes(["read_fulfillments", "read_inventory", "read_locations", "read_products", "write_orders"]),
-    [],
+    grantedScopeHandles({ currentAppInstallation: { accessScopes: [{ handle: "write_orders" }, { handle: null }] } }),
+    ["write_orders"],
   );
 });
 

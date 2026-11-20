@@ -2,7 +2,7 @@ import { Prisma } from "@prisma/client";
 import prisma from "../db.server";
 import type { ShipGeekContext } from "./auth.server";
 import { adminGraphql, userErrors } from "./graphql.server";
-import { ConnectorError } from "./http";
+import { ConnectorError, parseListQuery } from "./http";
 import {
   buildOrderCreateVariables,
   orderGid,
@@ -12,7 +12,6 @@ import {
   toPublicTracking,
   type CreateOrderInput,
 } from "./orders";
-import { parseListQuery } from "./products";
 import { externalIdTag } from "./tokens";
 
 const ORDER_FIELDS = `#graphql

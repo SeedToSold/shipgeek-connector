@@ -19,7 +19,7 @@ export default function Index() {
       <div className={styles.content}>
         <h1 className={styles.heading}>ShipGeek Connector</h1>
         <p className={styles.text}>
-          A Shopify app you host yourself. ShipGeek calls this connector for products, orders, and tracking.
+          A Shopify app you host yourself. ShipGeek calls this connector for supplier orders and fulfillments.
         </p>
         {showForm ? (
           <Form className={styles.form} method="post" action="/auth/login">
@@ -41,7 +41,7 @@ export default function Index() {
             <strong>ShipGeek gets a connector token.</strong> Create it in the embedded app and revoke it any time.
           </li>
           <li>
-            <strong>Customer fields stay out of the API.</strong> Reads return catalog, order, and tracking data.
+            <strong>Customer fields stay out of the API.</strong> Reads return orders and fulfillment tracking.
           </li>
         </ul>
       </div>

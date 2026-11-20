@@ -36,3 +36,15 @@ export async function readJson(request: Request): Promise<unknown> {
 export function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
+
+export function parseListQuery(url: URL, maxLimit = 50) {
+  const limit = Number(url.searchParams.get("limit") || "25");
+  if (!Number.isInteger(limit) || limit < 1 || limit > maxLimit) {
+    throw new ConnectorError(400, `limit must be an integer from 1 to ${maxLimit}`);
+  }
+  const cursor = url.searchParams.get("cursor");
+  if (cursor && cursor.length > 512) {
+    throw new ConnectorError(400, "cursor is too long");
+  }
+  return { limit, cursor: cursor || null };
+}

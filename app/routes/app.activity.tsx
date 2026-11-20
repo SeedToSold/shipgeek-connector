@@ -6,12 +6,13 @@ import prisma from "../db.server";
 
 const ACTION_LABELS: Record<string, string> = {
   "shop.read": "Read connection",
-  "products.list": "List products",
-  "products.read": "Read product",
   "orders.list": "List orders",
   "orders.read": "Read order",
   "orders.create": "Create order",
   "orders.tracking": "Read tracking",
+  "orders.query": "Proxy order query",
+  "webhooks.register": "Register webhooks",
+  "webhooks.clear": "Remove webhooks",
 };
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
