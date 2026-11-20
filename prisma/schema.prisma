@@ -1,0 +1,69 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Fields required by @shopify/shopify-app-session-storage-prisma.
+model Session {
+  id                  String    @id
+  shop                String
+  state               String
+  isOnline            Boolean   @default(false)
+  scope               String?
+  expires             DateTime?
+  accessToken         String
+  userId              BigInt?
+  firstName           String?
+  lastName            String?
+  email               String?
+  accountOwner        Boolean   @default(false)
+  locale              String?
+  collaborator        Boolean?  @default(false)
+  emailVerified       Boolean?  @default(false)
+  refreshToken        String?
+  refreshTokenExpires DateTime?
+}
+
+// Bearer credential ShipGeek uses. The raw token is shown once and only its hash is stored.
+model AccessToken {
+  id          String    @id @default(cuid())
+  shop        String
+  name        String
+  tokenHash   String    @unique
+  tokenPrefix String
+  lastFour    String
+  createdAt   DateTime  @default(now())
+  lastUsedAt  DateTime?
+  revokedAt   DateTime?
+
+  @@index([shop])
+}
+
+// Idempotency lock for order creation. Stores the external id and Shopify order id, never the address.
+model OrderRef {
+  id         String   @id @default(cuid())
+  shop       String
+  externalId String
+  orderId    String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([shop, externalId])
+  @@index([shop])
+}
+
+model AuditEvent {
+  id         String   @id @default(cuid())
+  shop       String
+  tokenId    String?
+  action     String
+  resourceId String?
+  status     Int
+  createdAt  DateTime @default(now())
+
+  @@index([shop, createdAt])
+}
