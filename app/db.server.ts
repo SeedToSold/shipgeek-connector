@@ -1,8 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
-import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { PrismaClient } from "@prisma/client";
+import { Prisma, PrismaClient } from "@prisma/client";
 import migrationSql from "../prisma/postgres/migrations/20261120100000_init/migration.sql?raw";
 
 declare global {
@@ -22,19 +21,8 @@ const MIGRATION_NAME = "20261120100000_init";
 export async function ensureDatabase() {
   if (!/^postgres(?:ql)?:/i.test(process.env.DATABASE_URL ?? "")) return;
 
-  const schema = join(process.cwd(), "prisma/postgres/schema.prisma");
-  const prismaCli = join(process.cwd(), "node_modules/prisma/build/index.js");
-  if (existsSync(schema) && existsSync(prismaCli)) {
-    try {
-      execFileSync(process.execPath, [prismaCli, "migrate", "deploy", "--schema", schema], { stdio: "inherit" });
-      return;
-    } catch (error) {
-      console.error(error);
-    }
-  }
-
   const found = await prisma.$queryRaw<Array<{ name: string | null }>>`
-    SELECT to_regclass('public."Session"') AS name
+    SELECT to_regclass('public."Session"')::text AS name
   `;
   if (found[0]?.name) return;
 
@@ -43,8 +31,8 @@ export async function ensureDatabase() {
     try {
       await prisma.$executeRawUnsafe(statement);
     } catch (error) {
-      if (!statement.startsWith("CREATE SCHEMA")) throw error;
-      console.error(error);
+      if (statement.startsWith("CREATE SCHEMA") || alreadyExists(error)) continue;
+      throw error;
     }
   }
   await recordMigration(sql);
@@ -53,6 +41,12 @@ export async function ensureDatabase() {
 function migrationSource() {
   const path = join(process.cwd(), "prisma/postgres/migrations", MIGRATION_NAME, "migration.sql");
   return existsSync(path) ? readFileSync(path, "utf8") : migrationSql;
+}
+
+function alreadyExists(error: unknown) {
+  if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== "P2010") return false;
+  const databaseCode = typeof error.meta?.code === "string" ? error.meta.code : "";
+  return databaseCode === "42P07" || databaseCode === "42710";
 }
 
 function sqlStatements(sql: string) {
