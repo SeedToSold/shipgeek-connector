@@ -14,8 +14,11 @@ test("order creation is proxied and other mutations stay off the proxy", () => {
   assert.equal(isOrderFulfillmentQuery("mutation orderCreate { orderCreate { order { id } } }"), false);
   assert.doesNotThrow(() => assertOrderFulfillmentQuery("mutation orderCreate { orderCreate { order { id } } }"));
   assert.doesNotThrow(() => assertOrderFulfillmentQuery("mutation orderCreateManualPayment { orderCreateManualPayment { order { id } } }"));
+  assert.doesNotThrow(() => assertOrderFulfillmentQuery("mutation OrderCancel { orderCancel(orderId: $orderId) { job { id } orderCancelUserErrors { message } } }"));
   assert.equal(isOrderFulfillmentQuery("mutation fulfillmentCreate($fulfillment: FulfillmentInput!) { fulfillmentCreate(fulfillment: $fulfillment) { fulfillment { id } } }"), false);
-  assert.throws(() => assertOrderFulfillmentQuery("mutation fulfillmentCreate { fulfillmentCreate { fulfillment { id } } }"), /only proxies/);
+  assert.doesNotThrow(() => assertOrderFulfillmentQuery("mutation fulfillmentCreate { fulfillmentCreate { fulfillment { id } } }"));
+  assert.doesNotThrow(() => assertOrderFulfillmentQuery("mutation orderEditBegin { orderEditBegin(id: $id) { calculatedOrder { id } } }"));
+  assert.throws(() => assertOrderFulfillmentQuery("mutation fulfillmentServiceCreate { fulfillmentServiceCreate(name: $name) { fulfillmentService { id } } }"), /only proxies/);
   assert.equal(isOrderFulfillmentQuery("query { products(first: 10) { nodes { title } } }"), false);
   assert.equal(isOrderFulfillmentQuery('query { orders(query: "fulfillment") { nodes { id } } }'), true);
   assert.throws(() => assertOrderFulfillmentQuery("query { shop { name } }"), /only proxies/);

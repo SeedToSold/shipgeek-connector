@@ -2,7 +2,7 @@ import { querySelectsCustomerData } from "./customer-data";
 import { ConnectorError } from "./http";
 
 const ORDER_FIELDS = /\b(orders|order|draftOrderAvailableDeliveryOptions|draftOrders|draftOrder|fulfillmentOrders|fulfillmentOrder|fulfillments|fulfillment)\b/;
-const ORDER_MUTATIONS = /\b(orderCreate|orderCreateManualPayment)\b/;
+const ORDER_ACTION = /\b(?:draftOrder|fulfillmentOrder|fulfillment(?!Service)|order)[A-Za-z0-9_]*\b/;
 const METAFIELD_MUTATIONS = /\b(metafieldDefinitionCreate|metafieldDefinitionUpdate)\b/;
 
 export function queryText(document: string) {
@@ -14,7 +14,7 @@ export function queryText(document: string) {
 
 export function isConnectorOrderMutation(document: string) {
   const text = queryText(document);
-  return /\bmutation\b/.test(text) && ORDER_MUTATIONS.test(text);
+  return /\bmutation\b/.test(text) && ORDER_ACTION.test(text);
 }
 
 export function isShipGeekOrderMetafieldMutation(document: string) {
@@ -45,7 +45,7 @@ export function isOrderFulfillmentQuery(document: string) {
 export function assertOrderFulfillmentQuery(document: string) {
   if (!String(document || "").trim()) throw new ConnectorError(400, "Query is required");
   if (!isOrderFulfillmentQuery(document) && !isConnectorOrderMutation(document) && !isShipGeekOrderMetafieldMutation(document)) {
-    throw new ConnectorError(403, "The connector only proxies order and fulfillment queries, order creation, and ShipGeek order metafields");
+    throw new ConnectorError(403, "The connector only proxies order and fulfillment actions, and ShipGeek order metafields");
   }
 }
 

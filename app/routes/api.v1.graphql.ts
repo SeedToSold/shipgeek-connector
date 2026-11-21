@@ -9,7 +9,17 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const query = isRecord(body) && typeof body.query === "string" ? body.query : "";
   const variables = isRecord(body) && isRecord(body.variables) ? body.variables : undefined;
 
-  const actionName = isConnectorOrderMutation(query) ? "orders.create" : isShipGeekOrderMetafieldMutation(query) ? "metafields.ensure" : "orders.query";
+  const actionName = isShipGeekOrderMetafieldMutation(query)
+    ? "metafields.ensure"
+    : !isConnectorOrderMutation(query)
+      ? "orders.query"
+      : /\borderCancel\b/.test(query)
+        ? "orders.cancel"
+        : /\bfulfillment/.test(query)
+          ? "fulfillments.update"
+          : /\b(?:orderCreate|draftOrder)/.test(query)
+            ? "orders.create"
+            : "orders.update";
 
   return shipgeekRoute(request, actionName, async (context) => {
     if (!query) throw new ConnectorError(400, "Query is required");
