@@ -81,7 +81,7 @@ Run the app behind HTTPS. Set:
 - `SHOPIFY_API_SECRET`
 - `SHOPIFY_APP_URL` to the public origin, with no trailing path
 - `SCOPES` to the scopes in `shopify.app.toml`
-- `DATABASE_URL` to a persistent SQLite file, for example `file:/data/connector.sqlite`
+- `DATABASE_URL` to the Postgres database, for example `postgresql://user:password@host:5432/shipgeek_connector`
 
 In the supplier's Shopify app settings:
 
@@ -93,7 +93,7 @@ Then push the scopes and webhook subscriptions:
 
 ```shell
 npm run deploy
-npm run setup
+npm run setup:postgres
 npm run start
 ```
 
@@ -106,8 +106,8 @@ docker run --rm -p 3000:3000 \
   -e SHOPIFY_API_SECRET \
   -e SHOPIFY_APP_URL \
   -e SCOPES \
-  -v connector-data:/data \
+  -e DATABASE_URL \
   shipgeek-connector
 ```
 
-The container stores SQLite at `/data/connector.sqlite`. Keep that volume. Uninstalling the app revokes connector tokens and deletes the Shopify session.
+The container applies the Postgres migrations on startup. Local development keeps using the SQLite schema in `prisma/schema.prisma`. After changing that file, run `node scripts/postgres-schema.mjs` and add the new SQL under `prisma/postgres/migrations`. Uninstalling the app revokes connector tokens and deletes the Shopify session.
