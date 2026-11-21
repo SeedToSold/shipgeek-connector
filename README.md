@@ -110,4 +110,4 @@ docker run --rm -p 3000:3000 \
   shipgeek-connector
 ```
 
-The container applies the Postgres migrations on startup. Local development keeps using the SQLite schema in `prisma/schema.prisma`. After changing that file, run `node scripts/postgres-schema.mjs` and add the new SQL under `prisma/postgres/migrations`. Uninstalling the app revokes connector tokens and deletes the Shopify session.
+The server applies the Postgres migrations before it serves. Local development keeps using the SQLite schema in `prisma/schema.prisma`. After changing that file, run `node scripts/postgres-schema.mjs` and add the new SQL under `prisma/postgres/migrations`. Uninstalling the app revokes connector tokens and deletes the Shopify session.

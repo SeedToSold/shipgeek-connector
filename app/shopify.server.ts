@@ -5,9 +5,10 @@ import {
   shopifyApp,
 } from "@shopify/shopify-app-react-router/server";
 import { PrismaSessionStorage } from "@shopify/shopify-app-session-storage-prisma";
-import prisma from "./db.server";
+import prisma, { ensureDatabase } from "./db.server";
 import { ensureOrderWebhooks } from "./shipgeek/webhooks.server";
 
+await ensureDatabase();
 const prismaSessionStorage = new PrismaSessionStorage(prisma);
 const persistentSessions = {
   storeSession: prismaSessionStorage.storeSession.bind(prismaSessionStorage),
