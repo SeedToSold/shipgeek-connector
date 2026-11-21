@@ -1,7 +1,7 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
 client_id = "478c30d8d16be7acaf3abfaa29769e90"
-application_url = "https://localhost"
+application_url = "https://shipgeek-connector.vercel.app"
 embedded = true
 name = "ShipGeek Connector"
 
@@ -13,8 +13,7 @@ api_version = "2027-01"
 scopes = "read_assigned_fulfillment_orders,write_draft_orders,read_draft_orders,read_fulfillments,read_inventory,read_locations,read_merchant_managed_fulfillment_orders,write_order_edits,read_orders,write_orders,read_products,read_shipping,read_third_party_fulfillment_orders"
 
 [auth]
-redirect_urls = [ "https://localhost/auth/callback" ]
+redirect_urls = [ "https://shipgeek-connector.vercel.app/auth/callback" ]
 
 [build]
-include_config_on_deploy = true
 automatically_update_urls_on_dev = true

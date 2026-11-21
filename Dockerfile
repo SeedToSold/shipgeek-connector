@@ -5,11 +5,8 @@ WORKDIR /app
 
 COPY package.json package-lock.json ./
 COPY prisma ./prisma
-COPY scripts/postgres-schema.mjs ./scripts/postgres-schema.mjs
-RUN npm ci --include=dev \
-  && node scripts/postgres-schema.mjs \
-  && npx prisma generate --schema prisma/postgres/schema.prisma \
-  && npm cache clean --force
+COPY scripts ./scripts
+RUN npm ci --include=dev && npm cache clean --force
 
 COPY . .
 RUN npm run build
