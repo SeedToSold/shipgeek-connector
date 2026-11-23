@@ -4,8 +4,7 @@ import {
   requestsForeignResource,
   resourceIdList,
   scrubCustomerData,
-  topicKind,
-  webhookOrderCreatedByApp,
+  forwardableWebhookPayload,
   withoutUnownedResources,
   type ResourceIds,
 } from "./customer-data";
@@ -64,26 +63,13 @@ export async function shipGeekWebhookPayload(
   topic: string,
   payload: unknown,
 ) {
-  const kind = topicKind(topic);
   const appGid = await currentAppGid(admin, shop);
-  if (!appGid) return null;
+  return forwardableWebhookPayload(topic, payload, appGid, (gid) => orderCreatedByConnector(admin, shop, gid));
+}
 
-  if (kind === "order") {
-    if (!webhookOrderCreatedByApp(payload, appGid)) return null;
-    return scrubCustomerData(payload);
-  }
-
-  if (kind === "fulfillment") {
-    const orderId = payload && typeof payload === "object" ? (payload as { order_id?: unknown }).order_id : null;
-    if (typeof orderId !== "number" && typeof orderId !== "string") return null;
-    const gid = `gid://shopify/Order/${orderId}`;
-    const owned = await resourceOwners(admin, shop, { orders: [gid], fulfillments: [], fulfillmentOrders: [] }, new Set());
-    if (owned.foreign.orders.has(gid)) return null;
-    if (!owned.owned.orders.has(gid)) return null;
-    return scrubCustomerData(payload);
-  }
-
-  return null;
+async function orderCreatedByConnector(admin: ShipGeekContext["admin"], shop: string, gid: string) {
+  const owned = await resourceOwners(admin, shop, { orders: [gid], fulfillments: [], fulfillmentOrders: [] }, new Set());
+  return owned.owned.orders.has(gid);
 }
 
 async function resourceOwners(

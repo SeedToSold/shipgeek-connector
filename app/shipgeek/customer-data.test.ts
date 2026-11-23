@@ -9,6 +9,8 @@ import {
   scrubCustomerData,
   topicKind,
   webhookOrderCreatedByApp,
+  webhookOrderGid,
+  forwardableWebhookPayload,
   withoutUnownedResources,
 } from "./customer-data";
 
@@ -79,6 +81,42 @@ test("webhook forwarding recognizes connector orders only", () => {
   assert.equal(webhookOrderCreatedByApp({ app_id: 55, email: "a@b.c" }, appGid), true);
   assert.equal(webhookOrderCreatedByApp({ app_id: 9 }, appGid), false);
   assert.equal(webhookOrderCreatedByApp({}, appGid), false);
+  assert.equal(webhookOrderCreatedByApp({ app_id: null }, appGid), false);
   assert.equal(topicKind("ORDERS_UPDATED"), "order");
+  assert.equal(topicKind("orders/cancelled"), "order");
   assert.equal(topicKind("fulfillments/create"), "fulfillment");
+  assert.equal(topicKind("products/update"), "other");
+  assert.equal(webhookOrderGid({ id: 12, order_id: 44 }, "order"), "gid://shopify/Order/12");
+  assert.equal(webhookOrderGid({ id: 12, order_id: 44 }, "fulfillment"), "gid://shopify/Order/44");
+  assert.equal(webhookOrderGid({ id: 12, order: { id: "gid://shopify/Order/44" } }, "fulfillment"), "gid://shopify/Order/44");
+  assert.equal(webhookOrderGid({ id: 12 }, "fulfillment"), "");
+});
+
+test("webhooks forward only when the connector created the order", async () => {
+  const appGid = "gid://shopify/App/55";
+  const owned = async (gid: string) => gid === "gid://shopify/Order/44";
+
+  const created = await forwardableWebhookPayload("ORDERS_CREATE", { id: 44, app_id: 55, email: "a@b.c" }, appGid, owned);
+  assert.equal(JSON.stringify(created).includes("a@b.c"), false);
+  assert.equal((created as { id: number }).id, 44);
+
+  assert.equal(await forwardableWebhookPayload("orders/updated", { id: 9, app_id: 9, email: "a@b.c" }, appGid, owned), null);
+  assert.equal(await forwardableWebhookPayload("ORDERS_CANCELLED", { id: 44, app_id: 9 }, appGid, owned), null);
+  assert.equal(await forwardableWebhookPayload("orders/updated", { id: 9 }, appGid, owned), null);
+
+  const lookedUp = await forwardableWebhookPayload("orders/updated", { id: 44, email: "a@b.c" }, appGid, owned);
+  assert.equal((lookedUp as { id: number }).id, 44);
+  assert.equal(JSON.stringify(lookedUp).includes("a@b.c"), false);
+
+  const fulfillment = await forwardableWebhookPayload(
+    "fulfillments/create",
+    { id: 999, order_id: 44, destination: { address1: "secret" } },
+    appGid,
+    owned,
+  );
+  assert.equal((fulfillment as { id: number }).id, 999);
+  assert.equal(JSON.stringify(fulfillment).includes("secret"), false);
+  assert.equal(await forwardableWebhookPayload("FULFILLMENTS_UPDATE", { id: 999, order_id: 9 }, appGid, owned), null);
+  assert.equal(await forwardableWebhookPayload("fulfillments/update", { id: 44 }, appGid, owned), null);
+  assert.equal(await forwardableWebhookPayload("products/update", { id: 44, app_id: 55 }, appGid, owned), null);
 });

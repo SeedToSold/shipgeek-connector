@@ -156,8 +156,43 @@ export function appIdNumeric(appGid: string) {
 export function webhookOrderCreatedByApp(payload: unknown, appGid: string) {
   if (!payload || typeof payload !== "object") return false;
   const appId = (payload as { app_id?: unknown }).app_id;
+  if (appId === undefined || appId === null || appId === "") return false;
   const numeric = appIdNumeric(appGid);
   return Boolean(numeric) && String(appId) === numeric;
+}
+
+export function webhookOrderGid(payload: unknown, source: "order" | "fulfillment") {
+  if (!payload || typeof payload !== "object") return "";
+  const record = payload as { id?: unknown; order_id?: unknown; order?: { id?: unknown } | null };
+  const raw = source === "fulfillment" ? (record.order_id ?? record.order?.id) : record.id;
+  if (typeof raw === "number" && Number.isSafeInteger(raw) && raw > 0) return `gid://shopify/Order/${raw}`;
+  if (typeof raw !== "string") return "";
+  const value = raw.trim();
+  if (/^\d+$/.test(value)) return `gid://shopify/Order/${value}`;
+  if (/^gid:\/\/shopify\/Order\/\d+$/.test(value)) return value;
+  return "";
+}
+
+export async function forwardableWebhookPayload(
+  topic: string,
+  payload: unknown,
+  appGid: string,
+  orderOwned: (orderGid: string) => Promise<boolean>,
+) {
+  const kind = topicKind(topic);
+  if ((kind !== "order" && kind !== "fulfillment") || !appGid) return null;
+  if (kind === "order" && webhookOrderCreatedByApp(payload, appGid)) return scrubCustomerData(payload);
+  if (kind === "order" && statedAppId(payload) !== undefined) return null;
+
+  const gid = webhookOrderGid(payload, kind === "fulfillment" ? "fulfillment" : "order");
+  if (!gid || !(await orderOwned(gid))) return null;
+  return scrubCustomerData(payload);
+}
+
+function statedAppId(payload: unknown) {
+  if (!payload || typeof payload !== "object" || !("app_id" in payload)) return undefined;
+  const appId = (payload as { app_id?: unknown }).app_id;
+  return appId === null || appId === "" ? undefined : appId;
 }
 
 export function topicKind(topic: string) {
